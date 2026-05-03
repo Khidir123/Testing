@@ -552,10 +552,88 @@ elif page == "🔍 Transaction Validator":
     with tab2:
         st.info("Upload a CSV with columns: Vendor, Department, Amount (SGD), Category, Payment Method, Date")
         uploaded = st.file_uploader("Choose file", type="csv")
+
+        def validate_transactions(df_in, existing_df=None):
+            df = df_in.copy()
+
+            required_cols = ["Vendor", "Department", "Amount (SGD)", "Category", "Payment Method", "Date"]
+            missing_cols = [c for c in required_cols if c not in df.columns]
+            if missing_cols:
+                return None, pd.DataFrame([{"Row": "", "Validation Status": "FAIL", "Issues": f"Missing columns: {', '.join(missing_cols)}"}])
+
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+            df["Amount (SGD)"] = pd.to_numeric(df["Amount (SGD)"], errors="coerce")
+
+            results = []
+
+            for idx, row in df.iterrows():
+                issues = []
+                status = "PASS"
+
+                if pd.isna(row["Date"]):
+                    issues.append("Invalid date")
+                    status = "FAIL"
+
+                if pd.isna(row["Amount (SGD)"]):
+                    issues.append("Invalid amount")
+                    status = "FAIL"
+
+                if not pd.isna(row["Amount (SGD)"]) and row["Amount (SGD)"] > 100000:
+                    issues.append("Amount exceeds S$100,000")
+                    status = "FAIL"
+
+                if not pd.isna(row["Date"]) and row["Date"].weekday() >= 5:
+                    issues.append("Weekend transaction")
+                    if status != "FAIL":
+                        status = "WARN"
+
+                if row["Payment Method"] == "Corporate Card" and not pd.isna(row["Amount (SGD)"]) and row["Amount (SGD)"] > 20000:
+                    issues.append("Corporate Card not allowed above S$20,000")
+                    status = "FAIL"
+
+                dup_source = existing_df if existing_df is not None else df
+                if not pd.isna(row["Date"]) and not pd.isna(row["Amount (SGD)"]):
+                    dup = dup_source[
+                        (dup_source["Vendor"] == row["Vendor"])
+                        & (dup_source["Amount (SGD)"].between(row["Amount (SGD)"] * 0.97, row["Amount (SGD)"] * 1.03))
+                        & ((dup_source["Date"] - row["Date"]).abs().dt.days < 7)
+                    ]
+                    if len(dup) > 1:
+                        issues.append("Possible duplicate")
+                        if status == "PASS":
+                            status = "WARN"
+
+                results.append({
+                    "Row": idx + 1,
+                    "Validation Status": status,
+                    "Issues": "; ".join(issues) if issues else "None"
+                })
+
+            return df, pd.DataFrame(results)
+
         if uploaded:
             udf = pd.read_csv(uploaded)
-            st.dataframe(udf.head(20), use_container_width=True)
-            st.success(f"✅ Loaded {len(udf)} rows. Validation pipeline would run here.")
+            validated_df, validation_df = validate_transactions(udf, fdf)
+
+            if validated_df is None:
+                st.error(validation_df.iloc[0]["Issues"])
+            else:
+                merged = pd.concat([validated_df, validation_df], axis=1)
+                st.dataframe(merged, use_container_width=True)
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("PASS", int((validation_df["Validation Status"] == "PASS").sum()))
+                c2.metric("WARN", int((validation_df["Validation Status"] == "WARN").sum()))
+                c3.metric("FAIL", int((validation_df["Validation Status"] == "FAIL").sum()))
+
+                st.success(f"✅ Validated {len(udf)} rows.")
+
+                st.download_button(
+                    "⬇️ Download Validated CSV",
+                    merged.to_csv(index=False).encode("utf-8"),
+                    "validated_agc_transactions.csv",
+                    "text/csv"
+                )
 
 # ─────────────────────────────────────────────
 # PAGE 3 — SPEND ANALYTICS
