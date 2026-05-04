@@ -432,7 +432,6 @@ if page == "📊 Dashboard":
     <div class="hero-banner">
       <span class="hero-badge">Finance Process Transformation</span>
       <h1 class="hero-title">FinOps Automation Suite</h1>
-      <p class="hero-sub">Real-time financial monitoring · Automated reporting · Anomaly detection · Workflow optimisation</p>
     </div>
     """, unsafe_allow_html=True)
 
