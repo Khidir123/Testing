@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import random
 import time
@@ -43,10 +42,9 @@ PLOT_LAYOUT = dict(
 )
 
 # ─────────────────────────────────────────────
-# CSS  — sidebar is always visible
+# CSS
 # ─────────────────────────────────────────────
-st.markdown(
-    f"""
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -63,36 +61,42 @@ html, body, [class*="css"] {{
     max-width: 1450px;
 }}
 
-/* ── FORCE SIDEBAR ALWAYS VISIBLE ── */
+/* ── SIDEBAR: always open, wide enough for text, no wrapping ── */
 section[data-testid="stSidebar"] {{
     display: flex !important;
     visibility: visible !important;
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
+    min-width: 220px !important;
+    width: 220px !important;
+    max-width: 220px !important;
     transform: none !important;
     position: relative !important;
     background: {CARD} !important;
     border-right: 1px solid #E5E7EB;
     flex-shrink: 0 !important;
+    overflow: visible !important;
 }}
 
-section[data-testid="stSidebar"] > div {{
-    width: 260px !important;
+section[data-testid="stSidebar"] > div:first-child {{
+    width: 220px !important;
+    padding: 1rem 0.85rem !important;
+    overflow-x: hidden !important;
 }}
 
-/* Hide the collapse arrow button */
-button[data-testid="collapsedControl"],
-button[kind="header"] {{
+/* Prevent text from wrapping in sidebar nav labels */
+section[data-testid="stSidebar"] .stRadio label p {{
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 0.88rem !important;
+}}
+
+/* Hide the collapse arrow */
+button[data-testid="collapsedControl"] {{
     display: none !important;
 }}
 
 section[data-testid="stSidebar"] * {{
     color: {TEXT} !important;
-}}
-
-section[data-testid="stSidebar"] .stRadio label {{
-    font-size: 0.9rem !important;
 }}
 
 /* ── Hero ── */
@@ -122,7 +126,7 @@ section[data-testid="stSidebar"] .stRadio label {{
     color: {ACCENT} !important;
     border: 1px solid rgba(124,111,240,0.22);
     border-radius: 999px;
-    padding: 4px 12px;
+    padding: 4px 14px;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -153,9 +157,9 @@ section[data-testid="stSidebar"] .stRadio label {{
     flex-direction: column;
     justify-content: space-between;
 }}
-.kpi-icon  {{ font-size: 1.4rem; margin-bottom: 0.1rem; }}
+.kpi-icon  {{ font-size: 1.4rem; }}
 .kpi-label {{ font-size: 0.72rem; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700; }}
-.kpi-value {{ font-size: 1.95rem; font-weight: 800; color: {TEXT}; line-height: 1; margin: 0.2rem 0; }}
+.kpi-value {{ font-size: 1.95rem; font-weight: 800; color: {TEXT}; line-height: 1; margin: 0.15rem 0; }}
 .kpi-delta-pos {{ color: #059669; font-size: 0.82rem; font-weight: 600; }}
 .kpi-delta-neg {{ color: {RED};   font-size: 0.82rem; font-weight: 600; }}
 
@@ -230,9 +234,8 @@ hr {{ border: none; border-top: 1px solid #E5E7EB; margin: 1.5rem 0; }}
 
 #MainMenu, footer, header {{ visibility: hidden; }}
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
+
 
 # ─────────────────────────────────────────────
 # DATA
@@ -277,16 +280,17 @@ def gen_transactions(n=220):
 
 df = gen_transactions(220)
 
+
 # ─────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown(
-        "<div style='font-size:1.05rem;font-weight:800;color:#111827;margin-bottom:2px;'>⚖ FinOps Suite</div>",
+        "<div style='font-size:1rem;font-weight:800;color:#111827;margin-bottom:2px;'>⚖ FinOps Suite</div>",
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<div style='font-size:0.8rem;color:#6B7280;margin-bottom:1rem;'>Attorney-General's Chambers</div>",
+        "<div style='font-size:0.78rem;color:#6B7280;margin-bottom:1rem;line-height:1.4;'>Attorney-General's<br>Chambers</div>",
         unsafe_allow_html=True,
     )
     st.divider()
@@ -294,26 +298,27 @@ with st.sidebar:
     page = st.radio(
         "Navigation",
         [
-            "📊 Executive Dashboard",
-            "🔍 Transaction Validator",
-            "📈 Spend Analytics",
-            "🤖 Report Generator",
-            "🚨 Anomaly Monitor",
+            "📊 Dashboard",
+            "🔍 Validator",
+            "📈 Analytics",
+            "🤖 Reports",
+            "🚨 Anomalies",
         ],
         label_visibility="collapsed",
     )
     st.divider()
 
     st.markdown(
-        "<div style='font-size:0.75rem;color:#7C6FF0;font-weight:700;letter-spacing:1px;margin-bottom:0.6rem;'>FILTERS</div>",
+        "<div style='font-size:0.72rem;color:#7C6FF0;font-weight:700;letter-spacing:1px;margin-bottom:0.6rem;'>FILTERS</div>",
         unsafe_allow_html=True,
     )
     sel_dept   = st.multiselect("Department", DEPARTMENTS, default=DEPARTMENTS)
     sel_cat    = st.multiselect("Category",   CATEGORIES,  default=CATEGORIES)
     date_range = st.date_input("Date Range",  value=(datetime(2025, 1, 1), datetime(2025, 12, 31)))
     st.divider()
-    st.caption("Demo v3.1 · AGC Interview")
+    st.caption("Demo v3.2 · AGC Interview")
 
+# Apply filters
 fdf = df[df["Department"].isin(sel_dept) & df["Category"].isin(sel_cat)].copy()
 if isinstance(date_range, tuple) and len(date_range) == 2:
     s, e = pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1])
@@ -323,7 +328,7 @@ if isinstance(date_range, tuple) and len(date_range) == 2:
 # ═══════════════════════════════════════════════
 # PAGE 1 — EXECUTIVE DASHBOARD
 # ═══════════════════════════════════════════════
-if page == "📊 Executive Dashboard":
+if page == "📊 Dashboard":
 
     st.markdown("""
     <div class="hero-banner">
@@ -333,19 +338,17 @@ if page == "📊 Executive Dashboard":
     </div>
     """, unsafe_allow_html=True)
 
-    # ── 4 KPI cards ──
-    total_spend  = fdf["Amount (SGD)"].sum()
-    n_txn        = len(fdf)
-    n_anomalies  = (fdf["Flag"] != "Normal").sum()
-    avg_txn      = fdf["Amount (SGD)"].mean() if n_txn > 0 else 0
-    top_vendor   = fdf.groupby("Vendor")["Amount (SGD)"].sum().idxmax() if n_txn > 0 else "—"
+    total_spend = fdf["Amount (SGD)"].sum()
+    n_txn       = len(fdf)
+    n_anomalies = (fdf["Flag"] != "Normal").sum()
+    avg_txn     = fdf["Amount (SGD)"].mean() if n_txn > 0 else 0
 
     c1, c2, c3, c4 = st.columns(4)
     kpis = [
-        (c1, "💰", "Total Spend",       f"S${total_spend/1e6:.2f}M", "↑ 4.2% vs last year",       True),
-        (c2, "🧾", "Transactions",       f"{n_txn:,}",               "↑ 12 this week",             True),
-        (c3, "🚨", "Anomalies Flagged",  str(n_anomalies),           f"{n_anomalies} need review", False),
-        (c4, "📊", "Avg Transaction",    f"S${avg_txn:,.0f}",        f"Across {n_txn} records",    True),
+        (c1, "💰", "Total Spend",      f"S${total_spend/1e6:.2f}M", "↑ 4.2% vs last year",       True),
+        (c2, "🧾", "Transactions",      f"{n_txn:,}",               "↑ 12 this week",             True),
+        (c3, "🚨", "Anomalies Flagged", str(n_anomalies),           f"{n_anomalies} need review", False),
+        (c4, "📊", "Avg Transaction",   f"S${avg_txn:,.0f}",        f"Across {n_txn} records",    True),
     ]
     for col, icon, label, val, delta, pos in kpis:
         with col:
@@ -384,30 +387,21 @@ if page == "📊 Executive Dashboard":
         st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("<hr>", unsafe_allow_html=True)
-
-    # ── Department Spend: clean horizontal grouped bar ──
     st.markdown('<div class="section-title">Department Spend by Category</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Comparative breakdown across all departments</div>', unsafe_allow_html=True)
 
     dept_cat = fdf.groupby(["Department", "Category"])["Amount (SGD)"].sum().reset_index()
     fig3 = px.bar(
         dept_cat,
-        x="Amount (SGD)",
-        y="Department",
-        color="Category",
-        orientation="h",
-        template="plotly_white",
-        color_discrete_sequence=CHART_COLORS,
-        barmode="group",
+        x="Amount (SGD)", y="Department", color="Category",
+        orientation="h", template="plotly_white",
+        color_discrete_sequence=CHART_COLORS, barmode="group",
     )
     fig3.update_layout(
-        **PLOT_LAYOUT,
-        height=380,
+        **PLOT_LAYOUT, height=380,
         yaxis=dict(categoryorder="total ascending"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0, font_size=11),
-        xaxis_title="Amount (SGD)",
-        yaxis_title="",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, font_size=11),
+        xaxis_title="Amount (SGD)", yaxis_title="",
     )
     fig3.update_traces(marker_cornerradius=4)
     st.plotly_chart(fig3, use_container_width=True)
@@ -416,7 +410,7 @@ if page == "📊 Executive Dashboard":
 # ═══════════════════════════════════════════════
 # PAGE 2 — TRANSACTION VALIDATOR
 # ═══════════════════════════════════════════════
-elif page == "🔍 Transaction Validator":
+elif page == "🔍 Validator":
 
     st.markdown('<div class="section-title">🔍 Automated Transaction Validator</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Simulate or upload transactions — checks duplicates, policy limits, and data integrity in real time.</div>', unsafe_allow_html=True)
@@ -495,8 +489,8 @@ elif page == "🔍 Transaction Validator":
 
         def validate_transactions(df_in, existing_df=None):
             df_v = df_in.copy()
-            required_cols = ["Vendor", "Department", "Amount (SGD)", "Category", "Payment Method", "Date"]
-            missing = [c for c in required_cols if c not in df_v.columns]
+            required = ["Vendor", "Department", "Amount (SGD)", "Category", "Payment Method", "Date"]
+            missing  = [c for c in required if c not in df_v.columns]
             if missing:
                 return None, pd.DataFrame([{"Row": "", "Validation Status": "FAIL",
                                             "Issues": f"Missing columns: {', '.join(missing)}"}])
@@ -505,10 +499,8 @@ elif page == "🔍 Transaction Validator":
             results = []
             for idx, row in df_v.iterrows():
                 issues, status = [], "PASS"
-                if pd.isna(row["Date"]):
-                    issues.append("Invalid date"); status = "FAIL"
-                if pd.isna(row["Amount (SGD)"]):
-                    issues.append("Invalid amount"); status = "FAIL"
+                if pd.isna(row["Date"]):   issues.append("Invalid date");   status = "FAIL"
+                if pd.isna(row["Amount (SGD)"]): issues.append("Invalid amount"); status = "FAIL"
                 if not pd.isna(row["Amount (SGD)"]) and row["Amount (SGD)"] > 100000:
                     issues.append("Exceeds S$100,000 limit"); status = "FAIL"
                 if not pd.isna(row["Date"]) and row["Date"].weekday() >= 5:
@@ -544,17 +536,15 @@ elif page == "🔍 Transaction Validator":
                 c2v.metric("WARN", int((validation_df["Validation Status"] == "WARN").sum()))
                 c3v.metric("FAIL", int((validation_df["Validation Status"] == "FAIL").sum()))
                 st.success(f"✅ Validated {len(udf)} rows.")
-                st.download_button(
-                    "⬇️ Download Validated CSV",
-                    merged.to_csv(index=False).encode("utf-8"),
-                    "validated_agc_transactions.csv", "text/csv",
-                )
+                st.download_button("⬇️ Download Validated CSV",
+                                   merged.to_csv(index=False).encode("utf-8"),
+                                   "validated_transactions.csv", "text/csv")
 
 
 # ═══════════════════════════════════════════════
 # PAGE 3 — SPEND ANALYTICS
 # ═══════════════════════════════════════════════
-elif page == "📈 Spend Analytics":
+elif page == "📈 Analytics":
 
     st.markdown('<div class="section-title">📈 Spend Analytics</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Drill-down analysis across departments, vendors, and time periods.</div>', unsafe_allow_html=True)
@@ -566,11 +556,13 @@ elif page == "📈 Spend Analytics":
                         .agg(["sum","count","mean"]).reset_index())
         vendor_spend.columns = ["Vendor","Total Spend","Transactions","Avg Transaction"]
         vendor_spend = vendor_spend.sort_values("Total Spend", ascending=False)
+
         fig = px.bar(vendor_spend, x="Vendor", y="Total Spend", text="Transactions",
                      template="plotly_white", color_discrete_sequence=[ACCENT])
         fig.update_traces(texttemplate="%{text} txns", textposition="outside", marker_cornerradius=6)
         fig.update_layout(**PLOT_LAYOUT, height=360)
         st.plotly_chart(fig, use_container_width=True)
+
         st.dataframe(
             vendor_spend.style.format({"Total Spend": "S${:,.0f}", "Avg Transaction": "S${:,.0f}"}),
             use_container_width=True,
@@ -585,21 +577,34 @@ elif page == "📈 Spend Analytics":
         st.plotly_chart(fig2, use_container_width=True)
 
     with tab3:
-        st.dataframe(
-            fdf[["Date","Department","Vendor","Category","Amount (SGD)","Payment Method","Status","Flag"]]
-            .sort_values("Date", ascending=False)
-            .style.format({"Amount (SGD)": "S${:,.2f}"})
-            .applymap(lambda v: "background-color:#FFFBEB; color:#92400E;" if "⚠️" in str(v) else ""),
-            use_container_width=True, height=500,
+        # ── FIX: use .map() instead of deprecated .applymap() ──
+        display_df = fdf[["Date","Department","Vendor","Category",
+                           "Amount (SGD)","Payment Method","Status","Flag"]]\
+                        .sort_values("Date", ascending=False).copy()
+
+        def highlight_flag(val):
+            if "⚠️" in str(val):
+                return "background-color:#FFFBEB; color:#92400E;"
+            return ""
+
+        styled = (
+            display_df.style
+            .format({"Amount (SGD)": "S${:,.2f}"})
+            .map(highlight_flag)          # .map() replaces deprecated .applymap()
         )
-        st.download_button("⬇️ Download CSV", fdf.to_csv(index=False).encode(),
-                           "agc_transactions.csv", "text/csv")
+        st.dataframe(styled, use_container_width=True, height=500)
+
+        st.download_button(
+            "⬇️ Download CSV",
+            fdf.to_csv(index=False).encode(),
+            "agc_transactions.csv", "text/csv"
+        )
 
 
 # ═══════════════════════════════════════════════
 # PAGE 4 — REPORT GENERATOR
 # ═══════════════════════════════════════════════
-elif page == "🤖 Report Generator":
+elif page == "🤖 Reports":
 
     st.markdown('<div class="section-title">🤖 Automated Report Generator</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Instantly produce structured financial reports — no manual compilation needed.</div>', unsafe_allow_html=True)
@@ -614,8 +619,8 @@ elif page == "🤖 Report Generator":
         ])
         period = st.selectbox("Period", ["Q1 2025","Q2 2025","Q3 2025","Q4 2025","Full Year 2025"])
     with col2:
-        include_charts = st.checkbox("Include charts", value=True)
-        include_raw    = st.checkbox("Include transaction detail", value=False)
+        st.checkbox("Include charts", value=True)
+        st.checkbox("Include transaction detail", value=False)
         fmt = st.radio("Output Format", ["CSV", "Excel", "Markdown"])
 
     if st.button("⚙️ Generate Report", use_container_width=True):
@@ -638,7 +643,7 @@ elif page == "🤖 Report Generator":
         total    = fdf["Amount (SGD)"].sum()
         approved = fdf.loc[fdf["Status"] == "Approved", "Amount (SGD)"].sum()
         top_dept = fdf.groupby("Department")["Amount (SGD)"].sum().idxmax() if len(fdf) > 0 else "—"
-        top_vend = fdf.groupby("Vendor")["Amount (SGD)"].sum().idxmax() if len(fdf) > 0 else "—"
+        top_vend = fdf.groupby("Vendor")["Amount (SGD)"].sum().idxmax()     if len(fdf) > 0 else "—"
         flags    = (fdf["Flag"] != "Normal").sum()
 
         report_text = f"""# {report_type}
@@ -669,22 +674,21 @@ Total financial activity for {period} amounted to **S${total:,.2f}**, of which *
 ## Compliance Notes
 - {flags} transaction(s) flagged as anomalous and referred for manual review.
 - All automated validations completed with zero system errors.
-- Next automated report scheduled: {(datetime.now() + timedelta(days=30)).strftime("%d %b %Y")}.
+- Next report scheduled: {(datetime.now() + timedelta(days=30)).strftime("%d %b %Y")}.
 
 ---
-*This report was automatically compiled by the AGC FinOps Automation Suite.*
+*Auto-compiled by AGC FinOps Automation Suite.*
 """
         st.markdown(report_text)
 
-        # ── Download matches chosen format ──
         if fmt == "CSV":
-            out_df = dept_summ.copy()
-            out_df.columns = ["Department","Total Spend (SGD)","Transaction Count"]
-            dl_data  = out_df.to_csv(index=False).encode("utf-8")
-            dl_name  = "agc_report.csv"
-            dl_mime  = "text/csv"
+            out = dept_summ.copy()
+            out.columns = ["Department","Total Spend (SGD)","Transaction Count"]
+            dl_data, dl_name, dl_mime = (
+                out.to_csv(index=False).encode("utf-8"),
+                "agc_report.csv", "text/csv"
+            )
             dl_label = "⬇️ Download Report (CSV)"
-
         elif fmt == "Excel":
             buf = io.BytesIO()
             with pd.ExcelWriter(buf, engine="openpyxl") as writer:
@@ -696,11 +700,11 @@ Total financial activity for {period} amounted to **S${total:,.2f}**, of which *
             dl_name  = "agc_report.xlsx"
             dl_mime  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             dl_label = "⬇️ Download Report (Excel)"
-
-        else:  # Markdown
-            dl_data  = report_text.encode("utf-8")
-            dl_name  = "agc_report.md"
-            dl_mime  = "text/markdown"
+        else:
+            dl_data, dl_name, dl_mime = (
+                report_text.encode("utf-8"),
+                "agc_report.md", "text/markdown"
+            )
             dl_label = "⬇️ Download Report (Markdown)"
 
         st.download_button(dl_label, dl_data, dl_name, dl_mime)
@@ -709,7 +713,7 @@ Total financial activity for {period} amounted to **S${total:,.2f}**, of which *
 # ═══════════════════════════════════════════════
 # PAGE 5 — ANOMALY MONITOR
 # ═══════════════════════════════════════════════
-elif page == "🚨 Anomaly Monitor":
+elif page == "🚨 Anomalies":
 
     st.markdown('<div class="section-title">🚨 Real-Time Anomaly Monitor</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Continuous automated scanning for unusual patterns — high values, duplicates, odd timing.</div>', unsafe_allow_html=True)
@@ -721,11 +725,9 @@ elif page == "🚨 Anomaly Monitor":
         st.metric("Flagged Transactions", len(anomalies),
                   delta=f"{len(anomalies)/max(len(fdf),1)*100:.1f}% of total")
     with m2:
-        high_val = (anomalies["Flag"] == "⚠️ High Value").sum()
-        st.metric("High Value Alerts", high_val)
+        st.metric("High Value Alerts", (anomalies["Flag"] == "⚠️ High Value").sum())
     with m3:
-        dup = (anomalies["Flag"] == "⚠️ Duplicate").sum()
-        st.metric("Duplicate Alerts", dup)
+        st.metric("Duplicate Alerts",  (anomalies["Flag"] == "⚠️ Duplicate").sum())
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -757,8 +759,8 @@ elif page == "🚨 Anomaly Monitor":
     st.markdown("#### Spend Distribution: Flagged vs Normal")
     combined = fdf.copy()
     combined["Type"] = combined["Flag"].apply(lambda x: "Flagged" if x != "Normal" else "Normal")
-    fig2 = px.histogram(combined, x="Amount (SGD)", color="Type",
-                        nbins=40, template="plotly_white",
+    fig2 = px.histogram(combined, x="Amount (SGD)", color="Type", nbins=40,
+                        template="plotly_white",
                         color_discrete_map={"Normal": TEAL, "Flagged": ACCENT2},
                         barmode="overlay", opacity=0.78)
     fig2.update_layout(**PLOT_LAYOUT, height=300, legend=dict(font_size=11))
