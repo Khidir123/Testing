@@ -43,7 +43,7 @@ PLOT_LAYOUT = dict(
 )
 
 # ─────────────────────────────────────────────
-# CSS
+# CSS  — sidebar is always visible
 # ─────────────────────────────────────────────
 st.markdown(
     f"""
@@ -63,14 +63,34 @@ html, body, [class*="css"] {{
     max-width: 1450px;
 }}
 
-/* ── Sidebar: white bg, collapses naturally on narrow screens ── */
+/* ── FORCE SIDEBAR ALWAYS VISIBLE ── */
 section[data-testid="stSidebar"] {{
+    display: flex !important;
+    visibility: visible !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    transform: none !important;
+    position: relative !important;
     background: {CARD} !important;
     border-right: 1px solid #E5E7EB;
+    flex-shrink: 0 !important;
 }}
+
+section[data-testid="stSidebar"] > div {{
+    width: 260px !important;
+}}
+
+/* Hide the collapse arrow button */
+button[data-testid="collapsedControl"],
+button[kind="header"] {{
+    display: none !important;
+}}
+
 section[data-testid="stSidebar"] * {{
     color: {TEXT} !important;
 }}
+
 section[data-testid="stSidebar"] .stRadio label {{
     font-size: 0.9rem !important;
 }}
@@ -126,59 +146,24 @@ section[data-testid="stSidebar"] .stRadio label {{
     background: {CARD};
     border: 1px solid #E5E7EB;
     border-radius: 18px;
-    padding: 1.05rem 1.15rem;
+    padding: 1.15rem 1.2rem;
     box-shadow: 0 8px 24px rgba(17,24,39,0.05);
     height: 155px;
-    min-height: 155px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }}
-.kpi-icon {{
-    font-size: 1.4rem;
-    margin-bottom: 0.2rem;
-}}
-.kpi-label {{
-    font-size: 0.72rem;
-    color: #9CA3AF;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    font-weight: 700;
-    margin-bottom: 0.2rem;
-}}
-.kpi-value {{
-    font-size: 1.95rem;
-    font-weight: 800;
-    color: {TEXT};
-    line-height: 1;
-    margin-bottom: 0.3rem;
-}}
+.kpi-icon  {{ font-size: 1.4rem; margin-bottom: 0.1rem; }}
+.kpi-label {{ font-size: 0.72rem; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700; }}
+.kpi-value {{ font-size: 1.95rem; font-weight: 800; color: {TEXT}; line-height: 1; margin: 0.2rem 0; }}
 .kpi-delta-pos {{ color: #059669; font-size: 0.82rem; font-weight: 600; }}
-.kpi-delta-neg {{ color: {RED}; font-size: 0.82rem; font-weight: 600; }}
+.kpi-delta-neg {{ color: {RED};   font-size: 0.82rem; font-weight: 600; }}
 
 /* ── Section headers ── */
-.section-title {{
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: {TEXT};
-    margin-bottom: 0.15rem;
-}}
-.section-sub {{
-    font-size: 0.85rem;
-    color: {MUTED};
-    margin-bottom: 0.95rem;
-}}
+.section-title {{ font-size: 1.15rem; font-weight: 800; color: {TEXT}; margin-bottom: 0.15rem; }}
+.section-sub   {{ font-size: 0.85rem; color: {MUTED}; margin-bottom: 0.95rem; }}
 
-/* ── Chart card wrapper ── */
-.chart-card {{
-    background: {CARD};
-    border: 1px solid #E5E7EB;
-    border-radius: 18px;
-    padding: 1.1rem 1.2rem 0.5rem;
-    box-shadow: 0 6px 18px rgba(17,24,39,0.04);
-}}
-
-/* ── Status badges ── */
+/* ── Badges ── */
 .badge-pass {{ background:#D1FAE5; color:#065F46; padding:2px 11px; border-radius:999px; font-size:0.76rem; font-weight:700; }}
 .badge-fail {{ background:#FEE2E2; color:#991B1B; padding:2px 11px; border-radius:999px; font-size:0.76rem; font-weight:700; }}
 .badge-warn {{ background:#FEF3C7; color:#92400E; padding:2px 11px; border-radius:999px; font-size:0.76rem; font-weight:700; }}
@@ -231,7 +216,7 @@ hr {{ border: none; border-top: 1px solid #E5E7EB; margin: 1.5rem 0; }}
 }}
 .stButton > button:hover {{ opacity: 0.92; transform: translateY(-1px); }}
 
-/* ── Progress bar ── */
+/* ── Progress ── */
 .stProgress > div > div > div {{ background: {ACCENT} !important; }}
 
 /* ── Metrics ── */
@@ -327,7 +312,7 @@ with st.sidebar:
     sel_cat    = st.multiselect("Category",   CATEGORIES,  default=CATEGORIES)
     date_range = st.date_input("Date Range",  value=(datetime(2025, 1, 1), datetime(2025, 12, 31)))
     st.divider()
-    st.caption("Demo v3.0 · AGC Interview")
+    st.caption("Demo v3.1 · AGC Interview")
 
 fdf = df[df["Department"].isin(sel_dept) & df["Category"].isin(sel_cat)].copy()
 if isinstance(date_range, tuple) and len(date_range) == 2:
@@ -348,22 +333,19 @@ if page == "📊 Executive Dashboard":
     </div>
     """, unsafe_allow_html=True)
 
+    # ── 4 KPI cards ──
     total_spend  = fdf["Amount (SGD)"].sum()
     n_txn        = len(fdf)
     n_anomalies  = (fdf["Flag"] != "Normal").sum()
     avg_txn      = fdf["Amount (SGD)"].mean() if n_txn > 0 else 0
-    approved_amt = fdf.loc[fdf["Status"] == "Approved", "Amount (SGD)"].sum()
-    approval_pct = round(approved_amt / total_spend * 100, 1) if total_spend > 0 else 0
-    top_dept     = fdf.groupby("Department")["Amount (SGD)"].sum().idxmax() if n_txn > 0 else "—"
-    compliance   = round((1 - n_anomalies / max(n_txn, 1)) * 100, 1)
+    top_vendor   = fdf.groupby("Vendor")["Amount (SGD)"].sum().idxmax() if n_txn > 0 else "—"
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4 = st.columns(4)
     kpis = [
-        (c1, "💰", "Total Spend",         f"S${total_spend/1e6:.2f}M", "↑ 4.2% vs last year",        True),
-        (c2, "🧾", "Transactions",         f"{n_txn:,}",               "↑ 12 this week",              True),
-        (c3, "🚨", "Anomalies Flagged",    str(n_anomalies),           f"{n_anomalies} need review",  False),
-        (c4, "📊", "Avg Transaction",      f"S${avg_txn:,.0f}",        f"Across {n_txn} records",     True),
-        (c5, "✅", "Compliance Rate",      f"{compliance}%",           "↑ 3.4% vs last quarter",      True),
+        (c1, "💰", "Total Spend",       f"S${total_spend/1e6:.2f}M", "↑ 4.2% vs last year",       True),
+        (c2, "🧾", "Transactions",       f"{n_txn:,}",               "↑ 12 this week",             True),
+        (c3, "🚨", "Anomalies Flagged",  str(n_anomalies),           f"{n_anomalies} need review", False),
+        (c4, "📊", "Avg Transaction",    f"S${avg_txn:,.0f}",        f"Across {n_txn} records",    True),
     ]
     for col, icon, label, val, delta, pos in kpis:
         with col:
@@ -403,7 +385,7 @@ if page == "📊 Executive Dashboard":
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Department Spend: horizontal grouped bar (much cleaner) ──
+    # ── Department Spend: clean horizontal grouped bar ──
     st.markdown('<div class="section-title">Department Spend by Category</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Comparative breakdown across all departments</div>', unsafe_allow_html=True)
 
@@ -422,14 +404,8 @@ if page == "📊 Executive Dashboard":
         **PLOT_LAYOUT,
         height=380,
         yaxis=dict(categoryorder="total ascending"),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="left",
-            x=0,
-            font_size=11,
-        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="left", x=0, font_size=11),
         xaxis_title="Amount (SGD)",
         yaxis_title="",
     )
@@ -469,7 +445,6 @@ elif page == "🔍 Transaction Validator":
                 if txn_amount <= 100000 else
                 ("❌", f"Amount S${txn_amount:,.2f} exceeds single-transaction limit", "FAIL")
             )
-
             dup = fdf[
                 (fdf["Vendor"] == txn_vendor) &
                 (fdf["Amount (SGD)"].between(txn_amount * 0.97, txn_amount * 1.03)) &
@@ -480,19 +455,16 @@ elif page == "🔍 Transaction Validator":
                 if dup.empty else
                 ("⚠️", f"{len(dup)} possible duplicate(s) found for this vendor/amount", "WARN")
             )
-
             checks.append(
                 ("⚠️", "Transaction dated on a weekend — unusual timing", "WARN")
                 if pd.Timestamp(txn_date).weekday() >= 5 else
                 ("✅", "Transaction date is a working day", "PASS")
             )
-
             checks.append(
                 ("❌", "Corporate Card not permitted for amounts > S$20,000", "FAIL")
                 if txn_method == "Corporate Card" and txn_amount > 20000 else
                 ("✅", "Payment method aligned with transaction amount", "PASS")
             )
-
             checks.append(("✅", f"Vendor '{txn_vendor}' is on the approved vendor register", "PASS"))
 
             st.markdown("#### Validation Results")
@@ -528,7 +500,7 @@ elif page == "🔍 Transaction Validator":
             if missing:
                 return None, pd.DataFrame([{"Row": "", "Validation Status": "FAIL",
                                             "Issues": f"Missing columns: {', '.join(missing)}"}])
-            df_v["Date"]        = pd.to_datetime(df_v["Date"], errors="coerce")
+            df_v["Date"]         = pd.to_datetime(df_v["Date"], errors="coerce")
             df_v["Amount (SGD)"] = pd.to_numeric(df_v["Amount (SGD)"], errors="coerce")
             results = []
             for idx, row in df_v.iterrows():
@@ -644,7 +616,7 @@ elif page == "🤖 Report Generator":
     with col2:
         include_charts = st.checkbox("Include charts", value=True)
         include_raw    = st.checkbox("Include transaction detail", value=False)
-        fmt = st.radio("Output Format", ["CSV", "Markdown", "Excel"])
+        fmt = st.radio("Output Format", ["CSV", "Excel", "Markdown"])
 
     if st.button("⚙️ Generate Report", use_container_width=True):
         progress = st.progress(0, text="Initialising automation pipeline…")
@@ -704,35 +676,34 @@ Total financial activity for {period} amounted to **S${total:,.2f}**, of which *
 """
         st.markdown(report_text)
 
-        # ── Download button matches chosen format ──
+        # ── Download matches chosen format ──
         if fmt == "CSV":
-            # Build a summary CSV
-            summary_df = dept_summ.copy()
-            summary_df.columns = ["Department","Total Spend (SGD)","Transaction Count"]
-            download_data  = summary_df.to_csv(index=False).encode("utf-8")
-            download_name  = "agc_report.csv"
-            download_mime  = "text/csv"
-            download_label = "⬇️ Download Report (CSV)"
+            out_df = dept_summ.copy()
+            out_df.columns = ["Department","Total Spend (SGD)","Transaction Count"]
+            dl_data  = out_df.to_csv(index=False).encode("utf-8")
+            dl_name  = "agc_report.csv"
+            dl_mime  = "text/csv"
+            dl_label = "⬇️ Download Report (CSV)"
 
         elif fmt == "Excel":
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            buf = io.BytesIO()
+            with pd.ExcelWriter(buf, engine="openpyxl") as writer:
                 dept_summ.to_excel(writer, sheet_name="Dept Summary", index=False)
                 fdf[["Date","Department","Vendor","Category","Amount (SGD)",
                      "Payment Method","Status","Flag"]].to_excel(
                     writer, sheet_name="Transactions", index=False)
-            download_data  = output.getvalue()
-            download_name  = "agc_report.xlsx"
-            download_mime  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            download_label = "⬇️ Download Report (Excel)"
+            dl_data  = buf.getvalue()
+            dl_name  = "agc_report.xlsx"
+            dl_mime  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            dl_label = "⬇️ Download Report (Excel)"
 
         else:  # Markdown
-            download_data  = report_text.encode("utf-8")
-            download_name  = "agc_report.md"
-            download_mime  = "text/markdown"
-            download_label = "⬇️ Download Report (Markdown)"
+            dl_data  = report_text.encode("utf-8")
+            dl_name  = "agc_report.md"
+            dl_mime  = "text/markdown"
+            dl_label = "⬇️ Download Report (Markdown)"
 
-        st.download_button(download_label, download_data, download_name, download_mime)
+        st.download_button(dl_label, dl_data, dl_name, dl_mime)
 
 
 # ═══════════════════════════════════════════════
