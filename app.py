@@ -11,7 +11,7 @@ import io
 # PAGE CONFIG
 # ─────────────────────────────────────────────
 st.set_page_config(
-    page_title="FinOps Automation Suite | AGC",
+    page_title="FinOps Automation Suite",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -383,7 +383,6 @@ with st.sidebar:
     st.markdown("""
     <div class="sidebar-brand">
         <div class="sidebar-brand-name">⚖️ FinOps Suite</div>
-        <div class="sidebar-brand-sub">Attorney-General's Chambers</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -415,7 +414,7 @@ with st.sidebar:
     )
 
     st.divider()
-    st.caption("Demo v3.2 · AGC Interview")
+    st.caption("Demo v3.2")
 
 # Apply filters
 fdf = df[df["Department"].isin(sel_dept) & df["Category"].isin(sel_cat)].copy()
@@ -431,7 +430,7 @@ if page == "📊 Dashboard":
 
     st.markdown("""
     <div class="hero-banner">
-      <span class="hero-badge">Attorney-General's Chambers · Finance Process Transformation</span>
+      <span class="hero-badge">Finance Process Transformation</span>
       <h1 class="hero-title">FinOps Automation Suite</h1>
       <p class="hero-sub">Real-time financial monitoring · Automated reporting · Anomaly detection · Workflow optimisation</p>
     </div>
