@@ -61,13 +61,13 @@ html, body, [class*="css"] {{
     max-width: 1450px;
 }}
 
-/* ── SIDEBAR: always open, wide enough for text, no wrapping ── */
+/* ── SIDEBAR: wider, roomy, no cramping ── */
 section[data-testid="stSidebar"] {{
     display: flex !important;
     visibility: visible !important;
-    min-width: 220px !important;
-    width: 220px !important;
-    max-width: 220px !important;
+    min-width: 270px !important;
+    width: 270px !important;
+    max-width: 270px !important;
     transform: none !important;
     position: relative !important;
     background: {CARD} !important;
@@ -77,17 +77,78 @@ section[data-testid="stSidebar"] {{
 }}
 
 section[data-testid="stSidebar"] > div:first-child {{
-    width: 220px !important;
-    padding: 1rem 0.85rem !important;
+    width: 270px !important;
+    padding: 1.4rem 1.2rem 1.4rem 1.2rem !important;
     overflow-x: hidden !important;
+    overflow-y: auto !important;
 }}
 
-/* Prevent text from wrapping in sidebar nav labels */
+/* Nav radio labels — enough room, no forced ellipsis */
+section[data-testid="stSidebar"] .stRadio label {{
+    padding: 0.45rem 0.6rem !important;
+    border-radius: 8px !important;
+    transition: background 0.15s;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    cursor: pointer !important;
+}}
+section[data-testid="stSidebar"] .stRadio label:hover {{
+    background: #F3F4F6 !important;
+}}
 section[data-testid="stSidebar"] .stRadio label p {{
+    font-size: 0.92rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}}
+
+/* Selected nav item highlight */
+section[data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] p {{
+    color: {TEXT} !important;
+}}
+
+/* Multiselect tags — wrap cleanly, don't overflow */
+section[data-testid="stSidebar"] [data-baseweb="tag"] {{
+    background: rgba(124,111,240,0.12) !important;
+    border: 1px solid rgba(124,111,240,0.25) !important;
+    border-radius: 6px !important;
+    margin: 2px 2px !important;
+    max-width: 100% !important;
+}}
+section[data-testid="stSidebar"] [data-baseweb="tag"] span {{
+    font-size: 0.78rem !important;
+    color: {ACCENT} !important;
+    font-weight: 600 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    font-size: 0.88rem !important;
+    max-width: 150px !important;
+}}
+
+/* Multiselect container allows wrapping */
+section[data-testid="stSidebar"] [data-baseweb="select"] > div {{
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+    min-height: unset !important;
+    padding: 6px 8px !important;
+}}
+
+/* Sidebar labels */
+section[data-testid="stSidebar"] label {{
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: {MUTED} !important;
+    margin-bottom: 4px !important;
+}}
+
+/* Sidebar dividers */
+section[data-testid="stSidebar"] hr {{
+    margin: 0.9rem 0 !important;
+    border-color: #E5E7EB !important;
 }}
 
 /* Hide the collapse arrow */
@@ -97,6 +158,39 @@ button[data-testid="collapsedControl"] {{
 
 section[data-testid="stSidebar"] * {{
     color: {TEXT} !important;
+}}
+
+/* ── Sidebar brand block ── */
+.sidebar-brand {{
+    margin-bottom: 0.2rem;
+}}
+.sidebar-brand-name {{
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: {TEXT};
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 2px;
+}}
+.sidebar-brand-sub {{
+    font-size: 0.78rem;
+    color: {MUTED};
+    line-height: 1.45;
+    padding-left: 0.1rem;
+}}
+
+/* ── FILTERS label ── */
+.filters-label {{
+    font-size: 0.7rem;
+    color: {ACCENT};
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    margin-top: 0.2rem;
+    display: block;
 }}
 
 /* ── Hero ── */
@@ -285,16 +379,17 @@ df = gen_transactions(220)
 # SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(
-        "<div style='font-size:1rem;font-weight:800;color:#111827;margin-bottom:2px;'>⚖ FinOps Suite</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<div style='font-size:0.78rem;color:#6B7280;margin-bottom:1rem;line-height:1.4;'>Attorney-General's<br>Chambers</div>",
-        unsafe_allow_html=True,
-    )
+    # Brand block
+    st.markdown("""
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-name">⚖️ FinOps Suite</div>
+        <div class="sidebar-brand-sub">Attorney-General's Chambers</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.divider()
 
+    # Navigation
     page = st.radio(
         "Navigation",
         [
@@ -306,15 +401,19 @@ with st.sidebar:
         ],
         label_visibility="collapsed",
     )
+
     st.divider()
 
-    st.markdown(
-        "<div style='font-size:0.72rem;color:#7C6FF0;font-weight:700;letter-spacing:1px;margin-bottom:0.6rem;'>FILTERS</div>",
-        unsafe_allow_html=True,
-    )
+    # Filters label
+    st.markdown('<span class="filters-label">Filters</span>', unsafe_allow_html=True)
+
     sel_dept   = st.multiselect("Department", DEPARTMENTS, default=DEPARTMENTS)
     sel_cat    = st.multiselect("Category",   CATEGORIES,  default=CATEGORIES)
-    date_range = st.date_input("Date Range",  value=(datetime(2025, 1, 1), datetime(2025, 12, 31)))
+    date_range = st.date_input(
+        "Date Range",
+        value=(datetime(2025, 1, 1), datetime(2025, 12, 31)),
+    )
+
     st.divider()
     st.caption("Demo v3.2 · AGC Interview")
 
@@ -577,7 +676,6 @@ elif page == "📈 Analytics":
         st.plotly_chart(fig2, use_container_width=True)
 
     with tab3:
-        # ── FIX: use .map() instead of deprecated .applymap() ──
         display_df = fdf[["Date","Department","Vendor","Category",
                            "Amount (SGD)","Payment Method","Status","Flag"]]\
                         .sort_values("Date", ascending=False).copy()
@@ -590,7 +688,7 @@ elif page == "📈 Analytics":
         styled = (
             display_df.style
             .format({"Amount (SGD)": "S${:,.2f}"})
-            .map(highlight_flag)          # .map() replaces deprecated .applymap()
+            .map(highlight_flag)
         )
         st.dataframe(styled, use_container_width=True, height=500)
 
